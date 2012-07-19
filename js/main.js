@@ -31,36 +31,36 @@ $(function () {
     if (window.location.hostname === 'blueimp.github.com') {
         // Demo settings:
         $('#fileupload').fileupload('option', {
-            url: '//jquery-file-upload.appspot.com/',
-            maxFileSize: 5000000,
-            acceptFileTypes: /(\.|\/)(gif|jpe?g|png)$/i,
-            process: [
+            url:'//jquery-file-upload.appspot.com/',
+            maxFileSize:5000000,
+            acceptFileTypes:/(\.|\/)(gif|jpe?g|png)$/i,
+            process:[
                 {
-                    action: 'load',
-                    fileTypes: /^image\/(gif|jpeg|png)$/,
-                    maxFileSize: 20000000 // 20MB
+                    action:'load',
+                    fileTypes:/^image\/(gif|jpeg|png)$/,
+                    maxFileSize:20000000 // 20MB
                 },
                 {
-                    action: 'resize',
-                    maxWidth: 1440,
-                    maxHeight: 900
+                    action:'resize',
+                    maxWidth:1440,
+                    maxHeight:900
                 },
                 {
-                    action: 'save'
+                    action:'save'
                 }
             ]
         });
         // Upload server status check for browsers with CORS support:
         if ($.support.cors) {
             $.ajax({
-                url: '//jquery-file-upload.appspot.com/',
-                type: 'HEAD'
+                url:'//jquery-file-upload.appspot.com/',
+                type:'HEAD'
             }).fail(function () {
-                $('<span class="alert alert-error"/>')
-                    .text('Upload server currently unavailable - ' +
-                            new Date())
-                    .appendTo('#fileupload');
-            });
+                    $('<span class="alert alert-error"/>')
+                        .text('Upload server currently unavailable - ' +
+                        new Date())
+                        .appendTo('#fileupload');
+                });
         }
     } else {
         // Load existing files:
@@ -69,10 +69,39 @@ $(function () {
             $.getJSON(this.action, function (result) {
                 if (result && result.length) {
                     $(that).fileupload('option', 'done')
-                        .call(that, null, {result: result});
+                        .call(that, null, {result:result});
                 }
             });
         });
     }
+
+    // This code assumes each file upload has a related DOM node
+    // set as data.context, which is true for the UI version:
+    $('#fileupload').bind('fileuploadsend',
+        function (e, data) {
+            // This feature is only useful for browsers which rely on the iframe transport:
+            if (data.dataType.substr(0, 6) === 'iframe') {
+                // Set PHP's session.upload_progress.name value:
+                var progressObj = {
+                    name:'PHP_SESSION_UPLOAD_PROGRESS',
+                    value:(new Date()).getTime()  // pseudo unique ID
+                };
+                data.formData.push(progressObj);
+                // Start the progress polling:
+                data.context.data('interval', setInterval(function () {
+                    $.get('progress.php', $.param([progressObj]), function (result) {
+                        alert(result);
+                        // Trigger a fileupload progress event,
+                        // using the result as progress data:
+                        e = document.createEvent('Event');
+                        e.initEvent('progress', false, true);
+                        $.extend(e, result);
+                        $('#fileupload').data('fileupload')._onProgress(e, data);
+                    }, 'json');
+                }, 1000)); // poll every second
+            }
+        }).bind('fileuploadalways', function (e, data) {
+            clearInterval(data.context.data('interval'));
+        });
 
 });

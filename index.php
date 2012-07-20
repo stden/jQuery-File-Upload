@@ -61,7 +61,7 @@
 </div>
 <div class="container">
     <div class="page-header">
-        <h1>jQuery File Upload Demo</h1>
+        <h1>jQuery File Upload Demo <?=session_id()?></h1>
     </div>
     <blockquote>
         <p>File Upload widget with multiple file selection, drag&amp;drop support, progress bars and preview images for jQuery.<br>

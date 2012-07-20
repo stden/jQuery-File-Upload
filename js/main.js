@@ -75,6 +75,14 @@ $(function () {
         });
     }
 
+function dump(obj) {
+    var out = '';
+    for (var i in obj) {
+        out += i + ": " + obj[i] + "\n";
+    }
+    return out;
+}
+
     // This code assumes each file upload has a related DOM node
     // set as data.context, which is true for the UI version:
     $('#fileupload').bind('fileuploadsend',
@@ -90,15 +98,17 @@ $(function () {
                 // Start the progress polling:
                 data.context.data('interval', setInterval(function () {
                     $.get('progress.php', $.param([progressObj]), function (result) {
-                        alert(result);
                         // Trigger a fileupload progress event,
                         // using the result as progress data:
                         e = document.createEvent('Event');
                         e.initEvent('progress', false, true);
                         $.extend(e, result);
-                        $('#fileupload').data('fileupload')._onProgress(e, data);
+                        var t = $('#fileupload').data('fileupload');
+                        t._total = result.total;
+                        t._loaded = result.loaded;
+                        t._onProgress(e, data);
                     }, 'json');
-                }, 1000)); // poll every second
+                }, 500)); // poll every second
             }
         }).bind('fileuploadalways', function (e, data) {
             clearInterval(data.context.data('interval'));
